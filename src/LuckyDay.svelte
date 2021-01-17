@@ -12,6 +12,7 @@
 <style>
   div {
     position: fixed;
+    opacity: 0.4;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);

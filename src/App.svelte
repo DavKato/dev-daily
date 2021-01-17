@@ -1,40 +1,25 @@
 <script>
   import { onMount } from "svelte";
-  import { quintOut, quintIn } from "svelte/easing";
-  import { crossfade, fly as fl } from "svelte/transition";
+  import { quintOut } from "svelte/easing";
+  import { crossfade } from "svelte/transition";
   import { flip } from "svelte/animate";
 
   import colorScheme from "./colors";
   import { shuffle, wait } from "./utils";
 
-  import SVG from "./delete.svelte";
-
-  const fly = (node, mode = "in") => {
-    const options =
-      mode === "in"
-        ? { x: 1800, easing: quintOut }
-        : { x: -1800, easing: quintIn };
-
-    return fl(node, {
-      duration: 600,
-      ...options,
-    });
-  };
-
-  const subOut = (node) =>
-    fl(node, { delay: 200, duration: 500, x: 1500, easing: quintIn });
+  import SVG from "./Delete.svelte";
 
   const [send, receive] = crossfade({
     duration: (d) => Math.sqrt(d * 200),
 
     fallback(node) {
-      if (!preparationMode) return {};
+      if (slideOut || discussionMode) return {};
 
       const style = getComputedStyle(node);
       const transform = style.transform === "none" ? "" : style.transform;
 
       return {
-        duration: 600,
+        duration: 500,
         easing: quintOut,
         css: (t) => `
 					transform: ${transform} scale(${t});
@@ -131,30 +116,32 @@
     target === "minutes" ? (minutes = num) : (seconds = num);
   };
 
-  let preparationMode = true;
   let discussionMode = false;
-  let swing = false;
+  let slideOut = false;
+
   // Start discussion
-  const start = async (skip) => {
-    // Lucky Check
-    if (!skip && Math.random() * 22 >= 21) {
-      LuckyDay = (await import("./luckyDay.svelte")).default;
+  const isThisTheDay = async () => {
+    if (Math.random() * 22 >= 21) {
+      LuckyDay = (await import("./LuckyDay.svelte")).default;
       lucky = true;
       setTimeout(() => {
         lucky = false;
         return start(true);
       }, 5400);
     }
-    preparationMode = false;
-    swing = true;
+  };
 
-    await wait(400);
-    discussionMode = true;
+  const start = async () => {
+    // Lucky Check
+    isThisTheDay();
 
-    await wait(800);
+    slideOut = true;
+
+    await wait(1200);
+
     members = members.filter((m) => m.staged);
     members = shuffle(members);
-    swing = false;
+    discussionMode = true;
   };
 
   // Start the timer
@@ -165,37 +152,33 @@
 </script>
 
 <main class:discussion={discussionMode}>
-  {#if preparationMode}
-    <h1 transition:subOut>Choose members</h1>
+  {#if !discussionMode}
+    <h1 class:sub-out={slideOut}>Choose members</h1>
   {/if}
-  {#if !swing}
-    <div
-      class="starters container"
-      class:discussion={discussionMode}
-      in:fly={'in'}
-      out:fly>
-      {#if !discussionMode}<span class="description">スタメン</span>{/if}
+  <div
+    class="starters container"
+    class:discussion={discussionMode}
+    class:main-out={slideOut}>
+    {#if !discussionMode}<span class="description">スタメン</span>{/if}
 
-      {#each members.filter((m) => m.staged) as member (member.id)}
-        <button
-          class="starter member"
-          style="background-color:#{colors[member.id]}"
-          in:receive={{ key: member.id }}
-          out:send={{ key: member.id }}
-          animate:flip={{ duration: 250 }}
-          on:click={benchMember(member.id)}>
-          {member.name}
-        </button>
-      {/each}
-    </div>
-  {/if}
+    {#each members.filter((m) => m.staged) as member (member.id)}
+      <button
+        class="starter member"
+        style="background-color:#{colors[member.id]}"
+        in:receive={{ key: member.id }}
+        out:send={{ key: member.id }}
+        animate:flip={{ duration: 250 }}
+        on:click={benchMember(member.id)}>
+        {member.name}
+      </button>
+    {/each}
+  </div>
 
-  {#if preparationMode}
-    <aside transition:subOut>
+  {#if !discussionMode}
+    <aside class:sub-out={slideOut}>
       <input
         type="text"
         placeholder="Add Member"
-        class:preparationMode
         on:keydown={(e) => e.key === 'Enter' && addMember(e.target)} />
       <div class="bench container">
         <span class="description">ベンチ</span>
@@ -216,28 +199,29 @@
       </div>
     </aside>
 
-    <button class="start-btn" transition:subOut on:click={start}>
+    <button class="start-btn" class:sub-out={slideOut} on:click={start}>
       START
     </button>
   {/if}
 
-  {#if preparationMode || discussionStarted}
-    <div class="timer" in:fly={'in'} out:fly class:discussion={discussionMode}>
-      <input
-        type="number"
-        value={minutes}
-        min="0"
-        max="60"
-        on:change={(e) => updateTimer(e, 'minutes')} />
-      ：
-      <input
-        type="number"
-        min="0"
-        max="60"
-        value={secondsString}
-        on:change={(e) => updateTimer(e, 'seconds')} />
-    </div>
-  {/if}
+  <div
+    class="timer"
+    class:discussion={discussionMode}
+    class:main-out={slideOut}>
+    <input
+      type="number"
+      value={minutes}
+      min="0"
+      max="60"
+      on:change={(e) => updateTimer(e, 'minutes')} />
+    ：
+    <input
+      type="number"
+      min="0"
+      max="60"
+      value={secondsString}
+      on:change={(e) => updateTimer(e, 'seconds')} />
+  </div>
 
   {#if lucky}
     <LuckyDay />
@@ -281,7 +265,7 @@
     justify-items: center;
     align-items: center;
     gap: 60px;
-    grid-template-columns: auto;
+    grid-template-columns: 1fr;
     grid-template-rows: repeat(2, min-content);
     grid-template-areas:
       "starters"
@@ -423,5 +407,39 @@
   }
   .start-btn:active {
     border-width: 4px;
+  }
+
+  .main-out {
+    /* transform: translateX(-1800px); */
+    animation: main-out 0.7s ease-out 0s forwards;
+  }
+  .sub-out {
+    animation: sub-out 0.4s ease-out 0.1s forwards;
+  }
+  .discussion {
+    transform: translateX(1800px);
+    animation: main-in 0.6s ease-out 0.2s forwards;
+  }
+
+  @keyframes sub-out {
+    to {
+      transform: translateX(300px);
+      opacity: 0;
+    }
+  }
+
+  @keyframes main-out {
+    100% {
+      transform: translateX(-1800px);
+    }
+  }
+
+  @keyframes main-in {
+    from {
+      transform: translateX(1800px);
+    }
+    to {
+      transform: translateX(0);
+    }
   }
 </style>
