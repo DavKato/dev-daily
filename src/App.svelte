@@ -131,7 +131,7 @@
     target === "minutes" ? (minutes = num) : (seconds = num);
   };
 
-  let slideOut, animationEnd;
+  let slideOut;
 
   // Start discussion
   const isThisTheDay = async () => {
@@ -145,38 +145,72 @@
 
   const start = async () => {
     // Lucky Check
-    isThisTheDay();
+    await isThisTheDay();
 
     slideOut = true;
 
-    const nodes = [starters, timer];
-    nodes.forEach((node) => {
-      const anim = node.animate([{ transform: "translate3D(-1800px, 0, 0)" }], {
-        duration: 500,
-        delay: 200,
-        easing: "ease-in",
-      });
-      anim.onfinish = async () => {
-        node.style.transform = "translate3D(1800px, 0, 0)";
-
-        members = members.filter((m) => m.staged);
-        members = shuffle(members);
-        discussionMode = true;
-
-        await wait(400);
-
-        const end = node.animate([{ transform: "translate3D(0, 0, 0)" }], {
-          duration: 500,
-          easing: "ease-out",
-          fill: "forwards",
-        });
-
-        end.onfinish = () => (animationEnd = true);
-      };
-    });
+    animateStarters();
+    hideTimer();
   };
 
-  $: if (animationEnd) startTimer();
+  const animateStarters = () => {
+    const anim = starters.animate(
+      [{ transform: "translate3D(-1800px, 0, 0)" }],
+      {
+        duration: 500,
+        easing: "ease-in",
+      }
+    );
+    anim.onfinish = async () => {
+      starters.style.transform = "translate3D(1800px, 0, 0)";
+
+      members = members.filter((m) => m.staged);
+      members = shuffle(members);
+
+      await wait(300);
+      discussionMode = true;
+
+      await wait(300);
+
+      const end = starters.animate([{ transform: "translate3D(0, 0, 0)" }], {
+        duration: 500,
+        easing: "ease-out",
+        fill: "forwards",
+      });
+
+      end.onfinish = () => retrieveTimer();
+    };
+  };
+
+  const hideTimer = () => {
+    const anim = timer.animate(
+      [{ transform: "translate3D(0, 300px, 0)", opacity: 0 }],
+      {
+        duration: 400,
+        delay: 200,
+        easing: "ease-in",
+      }
+    );
+
+    anim.onfinish = () => {
+      timer.style.opacity = 0;
+      timer.style.transform = "translate3D(0, 70px, 0)";
+    };
+  };
+
+  const retrieveTimer = () => {
+    const anim = timer.animate(
+      [{ transform: "translate3D(0, 0, 0)", opacity: 1 }],
+      {
+        duration: 500,
+        delay: 200,
+        easing: "ease-out",
+        fill: "forwards",
+      }
+    );
+
+    anim.onfinish = () => startTimer();
+  };
 
   // Start the timer
   const startTimer = () => {
@@ -265,7 +299,7 @@
   </div>
 
   {#if lucky}
-    <LuckyDay />
+    <svelte:component this={LuckyDay} />
   {/if}
 </main>
 
@@ -452,12 +486,12 @@
   }
 
   .sub-out {
-    animation: sub-out 0.4s ease-out forwards;
+    animation: sub-out 0.3s 0.2s ease-in forwards;
   }
 
   @keyframes sub-out {
     to {
-      transform: translateX(300px);
+      transform: translateX(100px);
       opacity: 0;
     }
   }
