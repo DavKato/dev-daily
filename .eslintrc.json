@@ -1,0 +1,45 @@
+{
+  "env": {
+    "browser": true,
+    "es6": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "module"
+  },
+  "plugins": ["svelte3"],
+  "extends": ["airbnb-base"],
+  "overrides": [
+    {
+      "files": ["**/*.svelte"],
+      "processor": "svelte3/svelte3",
+      "rules": {
+        "import/first": 0,
+        "import/no-duplicates": 0,
+        "import/no-mutable-exports": 0
+      }
+    }
+  ],
+  "rules": {
+    "comma-dangle": ["error", "always-multiline"],
+    "space-before-function-paren": "off",
+    "indent": [ "error", "tab" ],
+    // "semi": "off",
+    "no-return-assign": "off",
+    "no-console": "warn",
+    "global-require": "off",
+    "import/no-extraneous-dependencies": "off",
+    "node/no-unpublished-require": "off",
+    "arrow-parens": "off",
+    "implicit-arrow-linebreak": "off",
+    "operator-linebreak": "off",
+    "no-confusing-arrow": "off",
+    "object-curly-newline": "off",
+    // "camelcase": "off",
+    "import/prefer-default-export": "off",
+    "no-underscore-dangle": "off",
+    "no-param-reassign": "off",
+    "no-tabs": "off",
+    "no-plusplus": "off"
+  }
+}
