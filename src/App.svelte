@@ -29,10 +29,13 @@
     },
   });
 
-  let uid = 1;
-  let members = [];
+  let starters, timer; // DOM
 
-  let colors = [];
+  let discussionMode;
+
+  let uid = 1;
+  let members = [],
+    colors = [];
 
   let minutes = null,
     seconds = null;
@@ -40,10 +43,12 @@
   $: secondsString = String(seconds).padStart(2, "0");
 
   $: if (minutes || seconds) {
-    localStorage.setItem(
-      "timeString",
-      JSON.stringify(`${minutes}:${secondsString}`)
-    );
+    if (!discussionMode) {
+      localStorage.setItem(
+        "timeString",
+        JSON.stringify(`${minutes}:${secondsString}`)
+      );
+    }
   }
 
   const defaults = {
@@ -91,6 +96,16 @@
     uid--;
   };
 
+  const onStarterClick = ({ target }, id) => {
+    if (discussionMode) {
+      console.log(target.style.opacity);
+      return target.style.opacity === "0.3"
+        ? (target.style.opacity = 1)
+        : (target.style.opacity = 0.3);
+    }
+    benchMember(id);
+  };
+
   const benchMember = (id) => {
     members.find((m) => m.id === id).staged = false;
     confirmMembers(members);
@@ -116,18 +131,15 @@
     target === "minutes" ? (minutes = num) : (seconds = num);
   };
 
-  let discussionMode = false;
-  let slideOut = false;
+  let slideOut, animationEnd;
 
   // Start discussion
   const isThisTheDay = async () => {
     if (Math.random() * 22 >= 21) {
       LuckyDay = (await import("./LuckyDay.svelte")).default;
       lucky = true;
-      setTimeout(() => {
-        lucky = false;
-        return start(true);
-      }, 5400);
+      await wait(5400);
+      lucky = false;
     }
   };
 
@@ -137,17 +149,49 @@
 
     slideOut = true;
 
-    await wait(1200);
+    const nodes = [starters, timer];
+    nodes.forEach((node) => {
+      const anim = node.animate([{ transform: "translate3D(-1800px, 0, 0)" }], {
+        duration: 500,
+        delay: 200,
+        easing: "ease-in",
+      });
+      anim.onfinish = async () => {
+        node.style.transform = "translate3D(1800px, 0, 0)";
 
-    members = members.filter((m) => m.staged);
-    members = shuffle(members);
-    discussionMode = true;
+        members = members.filter((m) => m.staged);
+        members = shuffle(members);
+        discussionMode = true;
+
+        await wait(400);
+
+        const end = node.animate([{ transform: "translate3D(0, 0, 0)" }], {
+          duration: 500,
+          easing: "ease-out",
+          fill: "forwards",
+        });
+
+        end.onfinish = () => (animationEnd = true);
+      };
+    });
   };
 
+  $: if (animationEnd) startTimer();
+
   // Start the timer
-  let discussionStarted = false;
   const startTimer = () => {
-    discussionStarted = true;
+    const intvl = setInterval(() => {
+      if (seconds === 0) {
+        if (minutes === 0) {
+          return clearInterval(intvl);
+        }
+        minutes--;
+        seconds = 59;
+        return;
+      }
+
+      seconds--;
+    }, 1000);
   };
 </script>
 
@@ -156,9 +200,9 @@
     <h1 class:sub-out={slideOut}>Choose members</h1>
   {/if}
   <div
+    bind:this={starters}
     class="starters container"
-    class:discussion={discussionMode}
-    class:main-out={slideOut}>
+    class:discussion={discussionMode}>
     {#if !discussionMode}<span class="description">スタメン</span>{/if}
 
     {#each members.filter((m) => m.staged) as member (member.id)}
@@ -168,7 +212,7 @@
         in:receive={{ key: member.id }}
         out:send={{ key: member.id }}
         animate:flip={{ duration: 250 }}
-        on:click={benchMember(member.id)}>
+        on:click={(e) => onStarterClick(e, member.id)}>
         {member.name}
       </button>
     {/each}
@@ -204,10 +248,7 @@
     </button>
   {/if}
 
-  <div
-    class="timer"
-    class:discussion={discussionMode}
-    class:main-out={slideOut}>
+  <div bind:this={timer} class="timer" class:discussion={discussionMode}>
     <input
       type="number"
       value={minutes}
@@ -260,6 +301,7 @@
     justify-items: end;
     align-items: center;
     align-content: center;
+    overflow: hidden;
   }
   main.discussion {
     justify-items: center;
@@ -365,9 +407,9 @@
     font-size: 120px;
     color: var(--gold-light);
   }
-  .timer.discussion {
+  /* .timer.discussion {
     opacity: 1 !important;
-  }
+  } */
   input[type="number"] {
     width: 140px;
     margin: 0;
@@ -409,37 +451,14 @@
     border-width: 4px;
   }
 
-  .main-out {
-    /* transform: translateX(-1800px); */
-    animation: main-out 0.7s ease-out 0s forwards;
-  }
   .sub-out {
-    animation: sub-out 0.4s ease-out 0.1s forwards;
-  }
-  .discussion {
-    transform: translateX(1800px);
-    animation: main-in 0.6s ease-out 0.2s forwards;
+    animation: sub-out 0.4s ease-out forwards;
   }
 
   @keyframes sub-out {
     to {
       transform: translateX(300px);
       opacity: 0;
-    }
-  }
-
-  @keyframes main-out {
-    100% {
-      transform: translateX(-1800px);
-    }
-  }
-
-  @keyframes main-in {
-    from {
-      transform: translateX(1800px);
-    }
-    to {
-      transform: translateX(0);
     }
   }
 </style>
