@@ -52,15 +52,7 @@
   }
 
   const defaults = {
-    members: [
-      { id: uid++, name: "万願寺", staged: true },
-      { id: uid++, name: "若松", staged: true },
-      { id: uid++, name: "繁泉", staged: true },
-      { id: uid++, name: "Aswin", staged: true },
-      { id: uid++, name: "Davide", staged: true },
-      { id: uid++, name: "Abir", staged: true },
-      { id: uid++, name: "カイト", staged: false },
-    ],
+    members: [],
     timeString: "10:00",
   };
 
@@ -236,7 +228,8 @@
   <div
     bind:this={starters}
     class="starters container"
-    class:discussion={discussionMode}>
+    class:discussion={discussionMode}
+  >
     {#if !discussionMode}<span class="description">スタメン</span>{/if}
 
     {#each members.filter((m) => m.staged) as member (member.id)}
@@ -257,7 +250,8 @@
       <input
         type="text"
         placeholder="Add Member"
-        on:keydown={(e) => e.key === 'Enter' && addMember(e.target)} />
+        on:keydown={(e) => e.key === "Enter" && addMember(e.target)}
+      />
       <div class="bench container">
         <span class="description">ベンチ</span>
         {#each members.filter((m) => !m.staged) as member (member.id)}
@@ -288,14 +282,16 @@
       value={minutes}
       min="0"
       max="60"
-      on:change={(e) => updateTimer(e, 'minutes')} />
+      on:change={(e) => updateTimer(e, "minutes")}
+    />
     ：
     <input
       type="number"
       min="0"
       max="60"
       value={secondsString}
-      on:change={(e) => updateTimer(e, 'seconds')} />
+      on:change={(e) => updateTimer(e, "seconds")}
+    />
   </div>
 
   {#if lucky}
