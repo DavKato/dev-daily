@@ -52,7 +52,6 @@
   }
 
   const defaults = {
-    members: [],
     timeString: "10:00",
   };
 
@@ -61,7 +60,9 @@
 
   onMount(() => {
     // Retrieve data from localStorage if exists
-    members = JSON.parse(localStorage.getItem("members")) || defaults.members;
+    const membersData = JSON.parse(localStorage.getItem("members")) || [];
+    members = membersData.map((m) => ({ ...m, id: uid++ }));
+
     const length =
       JSON.parse(localStorage.getItem("timeString")) || defaults.timeString;
     const timeArr = length.split(":").map((el) => Number(el));
@@ -85,12 +86,10 @@
 
   const removeMember = (id) => {
     confirmMembers(members.filter((m) => m.id !== id));
-    uid--;
   };
 
   const onStarterClick = ({ target }, id) => {
     if (discussionMode) {
-      console.log(target.style.opacity);
       return target.style.opacity === "0.3"
         ? (target.style.opacity = 1)
         : (target.style.opacity = 0.3);
@@ -110,7 +109,10 @@
 
   const confirmMembers = (confirmed) => {
     members = confirmed;
-    localStorage.setItem("members", JSON.stringify(confirmed));
+    localStorage.setItem(
+      "members",
+      JSON.stringify(confirmed.map((m) => ({ name: m.name, staged: m.staged })))
+    );
   };
 
   // Update Timer
@@ -135,9 +137,9 @@
     }
   };
 
-  const start = async () => {
+  const start = () => {
     // Lucky Check
-    await isThisTheDay();
+    isThisTheDay();
 
     slideOut = true;
 
@@ -239,7 +241,8 @@
         in:receive={{ key: member.id }}
         out:send={{ key: member.id }}
         animate:flip={{ duration: 250 }}
-        on:click={(e) => onStarterClick(e, member.id)}>
+        on:click={(e) => onStarterClick(e, member.id)}
+      >
         {member.name}
       </button>
     {/each}
@@ -261,7 +264,8 @@
             in:receive={{ key: member.id }}
             out:send={{ key: member.id }}
             animate:flip={{ duration: 250 }}
-            on:click={stageMember(member.id)}>
+            on:click={stageMember(member.id)}
+          >
             {member.name}
             <div on:click|stopPropagation>
               <SVG on:click={removeMember(member.id)} />
@@ -437,9 +441,9 @@
     font-size: 120px;
     color: var(--gold-light);
   }
-  /* .timer.discussion {
-    opacity: 1 !important;
-  } */
+  .timer.discussion {
+    pointer-events: none;
+  }
   input[type="number"] {
     width: 140px;
     margin: 0;

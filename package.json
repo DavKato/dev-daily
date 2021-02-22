@@ -1,5 +1,5 @@
 {
-  "name": "roller-timer",
+  "name": "briefing-ray",
   "version": "1.0.0",
   "scripts": {
     "build": "rollup -c",
